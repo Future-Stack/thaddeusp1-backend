@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String     @id @default(uuid())
+  fullName          String     @map("full_name")
+  email             String     @unique
+  phone             String?
+  password          String
+  role              UserRole   @default(USER)
+  profileImg        String?    @map("profile_img")
+  streetAddress     String?    @map("street_address")
+  city              String?
+  state             String?
+  zip               Int?
+  isVerified        Boolean    @default(false) @map("is_verified")
+  status            UserStatus @default(active)
+  isDeleted         Boolean    @default(false) @map("is_deleted")
+  lastLoggedin      DateTime?  @map("last_loggedin")
+  lastOtp           String?    @map("last_otp")
+  otpExpiredAt      DateTime?  @map("otp_expired_at")
+  passwordChangedAt DateTime?  @map("password_changed_at")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+  refreshToken      String?    @map("refresh_token")
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  active
+  inActive
+  suspended
+}
