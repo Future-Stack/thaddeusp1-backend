@@ -10,6 +10,6 @@ export class ChangePasswordDto {
   @ApiProperty({ example: 'newpass123' })
   @IsNotEmpty()
   @IsString()
-  @MinLength(6)
+  @MinLength(6, { message: 'Password must be at least 6 characters long' })
   newPassword: string;
 }

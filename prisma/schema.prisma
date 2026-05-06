@@ -12,30 +12,19 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id                String     @id @default(uuid())
-  fullName          String     @map("full_name")
-  email             String     @unique
-  phone             String?
-  password          String
-  role              UserRole   @default(USER)
-  profileImg        String?    @map("profile_img")
-  streetAddress     String?    @map("street_address")
-  city              String?
-  state             String?
-  zip               Int?
-  isVerified        Boolean    @default(false) @map("is_verified")
-  status            UserStatus @default(active)
-  isDeleted         Boolean    @default(false) @map("is_deleted")
-  lastLoggedin      DateTime?  @map("last_loggedin")
-  lastOtp           String?    @map("last_otp")
-  otpExpiredAt      DateTime?  @map("otp_expired_at")
-  passwordChangedAt DateTime?  @map("password_changed_at")
-  createdAt         DateTime   @default(now()) @map("created_at")
-  updatedAt         DateTime   @updatedAt @map("updated_at")
-  refreshToken      String?    @map("refresh_token")
+model Region {
+  id   String @id @default(uuid())
+  name String @unique
 
-  @@map("users")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // relations
+  users   User[]
+  vendors Vendor[]
+  events  Event[]
+
+  @@map("regions")
 }
 
 enum UserRole {
@@ -47,4 +36,81 @@ enum UserStatus {
   active
   inActive
   suspended
+}
+
+model User {
+  id       String   @id @default(uuid())
+  fullName String   @map("full_name")
+  email    String   @unique
+  phone    String?
+  password String
+  role     UserRole @default(USER)
+
+  //  region relation
+  regionId String?
+  region   Region? @relation(fields: [regionId], references: [id])
+
+  profileImg    String? @map("profile_img")
+  streetAddress String? @map("street_address")
+  city          String?
+  state         String?
+  zip           Int?
+
+  isVerified Boolean    @default(false) @map("is_verified")
+  status     UserStatus @default(active)
+  isDeleted  Boolean    @default(false) @map("is_deleted")
+
+  lastLoggedin      DateTime? @map("last_loggedin")
+  lastOtp           String?   @map("last_otp")
+  otpExpiredAt      DateTime? @map("otp_expired_at")
+  passwordChangedAt DateTime? @map("password_changed_at")
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  refreshToken String?  @map("refresh_token")
+
+  @@map("users")
+}
+
+model Vendor {
+  id      String  @id @default(uuid())
+  name    String
+  address String?
+  phone   String?
+
+  voucherValue Float? @map("voucher_value")
+
+  regionId String
+  region   Region @relation(fields: [regionId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([regionId])
+  @@map("vendors")
+}
+
+model Event {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  regionId String
+  region   Region @relation(fields: [regionId], references: [id])
+
+  drawDate    DateTime @map("draw_date")
+  ticketOpen  DateTime @map("ticket_open")
+  ticketClose DateTime @map("ticket_close")
+
+  ticketPrice Float @map("ticket_price")
+  prizeValue  Float @map("prize_value")
+  maxTickets  Int   @map("max_tickets")
+
+  isAutoDraw Boolean @default(false) @map("is_auto_draw")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([regionId])
+  @@map("events")
 }

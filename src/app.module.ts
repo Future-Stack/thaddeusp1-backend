@@ -7,6 +7,9 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { RegionModule } from './modules/region/region.module';
+import { VendorModule } from './modules/vendor/vendor.module';
+import { EventModule } from './modules/event/event.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -20,6 +23,9 @@ import envConfig from './config/env.config';
     AuthModule,
     UserModule,
     CloudinaryModule,
+    RegionModule,
+    VendorModule,
+    EventModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -41,7 +41,11 @@ export class UserService {
         city: data.city ?? user.city,
         state: data.state ?? user.state,
         zip: data.zip ? parseInt(data.zip, 10) : user.zip,
+        regionId: data.regionId ?? user.regionId,
         profileImg,
+      },
+      include: {
+        region: true,
       },
     });
 

@@ -37,4 +37,9 @@ export class UpdateProfileDto {
     format: 'binary',
   })
   profileImg?: any;
+
+  @ApiPropertyOptional({ example: 'uuid-of-region' })
+  @IsOptional()
+  @IsString()
+  regionId?: string;
 }

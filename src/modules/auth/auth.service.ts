@@ -57,6 +57,7 @@ export class AuthService {
         email: data.email,
         // phone: data.phone,
         password: hastPassword,
+        regionId: data.regionId,
       },
       select: {
         id: true,
@@ -65,6 +66,7 @@ export class AuthService {
         phone: true,
         profileImg: true,
         role: true,
+        region: true,
       },
     });
 
@@ -123,6 +125,9 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: {
         id: userId,
+      },
+      include: {
+        region: true,
       },
     });
     if (!user) throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
