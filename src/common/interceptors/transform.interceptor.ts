@@ -32,10 +32,10 @@ export class TransformInterceptor<T> implements NestInterceptor<
 
     return next.handle().pipe(
       map((data) => ({
-        data,
         statusCode,
-        timestamp: new Date().toISOString(),
         path: request.url,
+        timestamp: new Date().toISOString(),
+        data,
       })),
     );
   }

@@ -10,6 +10,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { RegionModule } from './modules/region/region.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { EventModule } from './modules/event/event.module';
+import { MailModule } from './mail/mail.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -26,6 +27,7 @@ import envConfig from './config/env.config';
     RegionModule,
     VendorModule,
     EventModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

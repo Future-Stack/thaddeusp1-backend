@@ -16,6 +16,7 @@ import { IEnv } from 'src/config/env.config';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private mailService: MailService,
   ) { }
 
   async hast(text: string) {
@@ -239,8 +241,8 @@ export class AuthService {
       data: { lastOtp: otp, otpExpiredAt },
     });
 
-    // TODO: Send Email with OTP (logging for now)
-    console.log(`OTP for ${data.email} is ${otp}`);
+    // Send Email with OTP
+    await this.mailService.sendOtp(data.email, otp);
 
     return { message: 'OTP sent to your email successfully' };
   }
