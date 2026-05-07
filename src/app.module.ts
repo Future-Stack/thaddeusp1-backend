@@ -11,6 +11,7 @@ import { RegionModule } from './modules/region/region.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { EventModule } from './modules/event/event.module';
 import { MailModule } from './mail/mail.module';
+import { PurchaseModule } from './modules/purchase/purchase.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -28,6 +29,7 @@ import envConfig from './config/env.config';
     VendorModule,
     EventModule,
     MailModule,
+    PurchaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

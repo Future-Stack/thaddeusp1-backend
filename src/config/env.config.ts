@@ -7,6 +7,7 @@ export interface IEnv {
     API_PREFIX: string;
     APP_NAME: string;
     APP_URL: string;
+    FRONTEND_URL: string;
   };
   DATABASE: {
     DATABASE_URL: string;
@@ -40,6 +41,10 @@ export interface IEnv {
     SUPER_ADMIN_EMAIL: string;
     SUPER_ADMIN_PASSWORD: string;
   };
+  STRIPE: {
+    STRIPE_SECRET_KEY: string;
+    STRIPE_WEBHOOK_SECRET: string;
+  };
 }
 
 const requiredEnv = [
@@ -68,6 +73,9 @@ const requiredEnv = [
   'PLATFORM_TAX_PERCENTAGE',
   'SUPER_ADMIN_EMAIL',
   'SUPER_ADMIN_PASSWORD',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'FRONTEND_URL',
 ];
 // env Checker
 function envChecker() {
@@ -88,6 +96,7 @@ export default registerAs('env', (): IEnv => {
       API_PREFIX: process.env.API_PREFIX as string,
       APP_NAME: process.env.APP_NAME as string,
       APP_URL: process.env.APP_URL as string,
+      FRONTEND_URL: process.env.FRONTEND_URL as string,
     },
     DATABASE: {
       DATABASE_URL: process.env.DATABASE_URL as string,
@@ -120,6 +129,10 @@ export default registerAs('env', (): IEnv => {
     ADMIN_CONFIG: {
       SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL as string,
       SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD as string,
+    },
+    STRIPE: {
+      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY as string,
+      STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET as string,
     },
   };
 });
