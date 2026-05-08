@@ -69,8 +69,13 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
   refreshToken String?  @map("refresh_token")
 
-  purchases Purchase[]
-  tickets   Ticket[]
+  purchases      Purchase[]
+  tickets        Ticket[]
+  drawsWon       Draw[]         @relation("DrawWinner")
+  drawsTriggered Draw[]         @relation("DrawTriggeredBy")
+  vouchers       Voucher[]
+  notifications  Notification[]
+  settings       UserSettings?
 
   @@map("users")
 }
@@ -81,13 +86,15 @@ model Vendor {
   address String?
   phone   String?
 
-  voucherValue Float? @map("voucher_value")
+  voucherValue Decimal? @map("voucher_value") @db.Decimal(10, 2)
 
   regionId String
   region   Region @relation(fields: [regionId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  vouchers Voucher[]
 
   @@index([regionId])
   @@map("vendors")
@@ -105,9 +112,9 @@ model Event {
   ticketOpen  DateTime @map("ticket_open")
   ticketClose DateTime @map("ticket_close")
 
-  ticketPrice Float @map("ticket_price")
-  prizeValue  Float @map("prize_value")
-  maxTickets  Int   @map("max_tickets")
+  ticketPrice Decimal @map("ticket_price") @db.Decimal(10, 2)
+  prizeValue  Decimal @map("prize_value") @db.Decimal(10, 2)
+  maxTickets  Int     @map("max_tickets")
 
   isAutoDraw Boolean @default(false) @map("is_auto_draw")
 
@@ -116,6 +123,7 @@ model Event {
 
   purchases Purchase[]
   tickets   Ticket[]
+  draws     Draw[]
 
   @@index([regionId])
   @@map("events")
@@ -139,7 +147,7 @@ model Purchase {
   event   Event  @relation(fields: [eventId], references: [id])
 
   quantity Int
-  total    Float
+  total    Decimal @db.Decimal(10, 2)
 
   status PurchaseStatus @default(pending)
 
@@ -185,8 +193,175 @@ model Ticket {
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  draw    Draw?
+  voucher Voucher?
+
   @@index([userId])
   @@index([eventId])
   @@index([purchaseId])
   @@map("tickets")
+}
+
+// ─── DRAW ────────────────────────────────────────────────────────────────────
+
+enum DrawMethod {
+  RANDOM
+  MANUAL
+}
+
+model Draw {
+  id String @id @default(uuid())
+
+  eventId String @map("event_id")
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  winnerId String @map("winner_id")
+  winner   User   @relation("DrawWinner", fields: [winnerId], references: [id])
+
+  winningTicketId String @unique @map("winning_ticket_id")
+  winningTicket   Ticket @relation(fields: [winningTicketId], references: [id])
+
+  method DrawMethod @default(RANDOM)
+
+  totalParticipants Int @map("total_participants")
+  totalTickets      Int @map("total_tickets")
+
+  drawnAt DateTime @default(now()) @map("drawn_at")
+
+  drawnById String? @map("drawn_by_id")
+  drawnBy   User?   @relation("DrawTriggeredBy", fields: [drawnById], references: [id])
+
+  voucher Voucher?
+
+  @@index([eventId])
+  @@index([winnerId])
+  @@map("draws")
+}
+
+// ─── VOUCHER ─────────────────────────────────────────────────────────────────
+
+enum VoucherStatus {
+  ACTIVE
+  REDEEMED
+  EXPIRED
+}
+
+model Voucher {
+  id String @id @default(uuid())
+
+  code  String        @unique
+  value Decimal       @db.Decimal(10, 2)
+  status VoucherStatus @default(ACTIVE)
+
+  drawId String @unique @map("draw_id")
+  draw   Draw   @relation(fields: [drawId], references: [id])
+
+  ticketId String @unique @map("ticket_id")
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  vendorId String @map("vendor_id")
+  vendor   Vendor @relation(fields: [vendorId], references: [id])
+
+  expiresAt  DateTime  @map("expires_at")
+  redeemedAt DateTime? @map("redeemed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([vendorId])
+  @@index([status])
+  @@map("vouchers")
+}
+
+// ─── NOTIFICATION ────────────────────────────────────────────────────────────
+
+enum NotificationType {
+  DRAW_REMINDER
+  WINNER_ANNOUNCEMENT
+  VOUCHER_ISSUED
+  VOUCHER_EXPIRY
+  DRAW_RESULT
+  MARKETING
+  WEEKLY_DIGEST
+  SYSTEM
+}
+
+model Notification {
+  id String @id @default(uuid())
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  type    NotificationType
+  title   String
+  message String
+
+  isRead Boolean @default(false) @map("is_read")
+
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+// ─── USER SETTINGS (per-user preferences, 1:1 with User) ────────────────────
+
+model UserSettings {
+  id String @id @default(uuid())
+
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Notification preferences
+  drawReminder       Boolean @default(true) @map("draw_reminder")
+  winnerAnnouncement Boolean @default(true) @map("winner_announcement")
+  marketingEmails    Boolean @default(true) @map("marketing_emails")
+  weeklyDigest       Boolean @default(true) @map("weekly_digest")
+  voucherExpiryAlert Boolean @default(true) @map("voucher_expiry_alert")
+
+  // Privacy
+  showOnWinnersList Boolean @default(true) @map("show_on_winners_list")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user_settings")
+}
+
+// ─── ADMIN SETTINGS (singleton: global platform configuration) ───────────────
+
+model AdminSettings {
+  id String @id @default(uuid())
+
+  // ── Platform Settings ──
+  maintenanceMode Boolean @default(false) @map("maintenance_mode")
+  automatedDraws  Boolean @default(false) @map("automated_draws")
+  drawDay         String? @map("draw_day") // e.g. "MONDAY", "TUESDAY"
+  drawTime        String? @map("draw_time") // e.g. "18:00"
+  maxTicketPerUser Int     @default(10) @map("max_ticket_per_user")
+  minTicketForDraw Int     @default(1) @map("min_ticket_for_draw")
+
+  // ── Notification Settings (what the platform sends) ──
+  emailWinners              Boolean @default(true) @map("email_winners")
+  emailAllParticipants      Boolean @default(true) @map("email_all_participants")
+  smsWinnerNotifications    Boolean @default(false) @map("sms_winner_notifications")
+  adminDrawAlerts           Boolean @default(true) @map("admin_draw_alerts")
+  lowParticipationAlert     Boolean @default(true) @map("low_participation_alert")
+  lowParticipationThreshold Int     @default(10) @map("low_participation_threshold")
+  marketingEmailsToUsers    Boolean @default(true) @map("marketing_emails_to_users")
+  drawReminders             Boolean @default(true) @map("draw_reminders")
+  autoSendVouchers          Boolean @default(true) @map("auto_send_vouchers")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_settings")
 }

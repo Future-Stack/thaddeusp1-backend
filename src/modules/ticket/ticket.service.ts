@@ -5,7 +5,7 @@ import { UpdateTicketDto } from './dto/update-ticket.dto';
 
 @Injectable()
 export class TicketService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findAll(query: TicketQueryDto) {
     const { searchTerm, eventId, userId, isWinner, page = '1', limit = '10' } = query;

@@ -41,7 +41,7 @@ export class PurchaseService {
       throw new BadRequestException('Not enough tickets available');
     }
 
-    const total = event.ticketPrice * quantity;
+    const total = Number(event.ticketPrice) * quantity;
 
     const purchase = await this.prisma.purchase.create({
       data: {
@@ -63,7 +63,7 @@ export class PurchaseService {
               name: event.name,
               description: `Tickets for ${event.name}`,
             },
-            unit_amount: Math.round(event.ticketPrice * 100), // Stripe expects cents
+            unit_amount: Math.round(Number(event.ticketPrice) * 100), // Stripe expects cents
           },
           quantity,
         },

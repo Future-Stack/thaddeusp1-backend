@@ -13,6 +13,10 @@ import { EventModule } from './modules/event/event.module';
 import { MailModule } from './mail/mail.module';
 import { PurchaseModule } from './modules/purchase/purchase.module';
 import { TicketModule } from './modules/ticket/ticket.module';
+import { DrawModule } from './modules/draw/draw.module';
+import { VoucherModule } from './modules/voucher/voucher.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -32,6 +36,10 @@ import envConfig from './config/env.config';
     MailModule,
     PurchaseModule,
     TicketModule,
+    DrawModule,
+    VoucherModule,
+    NotificationModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
