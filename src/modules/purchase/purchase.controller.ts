@@ -16,7 +16,7 @@ export class PurchaseController {
   @common.UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Initiate a ticket purchase' })
   async buyTickets(
-    @GetCurrentUser('id') userId: string,
+    @GetCurrentUser('userId') userId: string,
     @common.Body() createPurchaseDto: CreatePurchaseDto,
   ) {
     return this.purchaseService.createCheckoutSession(userId, createPurchaseDto);
