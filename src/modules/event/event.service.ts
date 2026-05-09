@@ -2,10 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class EventService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async create(data: CreateEventDto) {
     // Verify region exists
@@ -14,7 +19,7 @@ export class EventService {
     });
     if (!region) throw new NotFoundException('Region not found');
 
-    return this.prisma.event.create({
+    const event = await this.prisma.event.create({
       data: {
         ...data,
         drawDate: new Date(data.drawDate),
@@ -22,6 +27,16 @@ export class EventService {
         ticketClose: new Date(data.ticketClose),
       },
     });
+
+    // Send notification to all users
+    await this.notificationService.broadcast(
+      NotificationType.SYSTEM,
+      'New Event Created!',
+      `A new event "${event.name}" has been created. Participate now!`,
+      { eventId: event.id },
+    );
+
+    return event;
   }
 
   async findAll() {

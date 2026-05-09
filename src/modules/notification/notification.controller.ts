@@ -17,7 +17,7 @@ export class NotificationController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get my notifications' })
   findMyNotifications(
-    @GetCurrentUser('id') userId: string,
+    @GetCurrentUser('userId') userId: string,
     @Query() query: NotificationQueryDto,
   ) {
     return this.notificationService.findMyNotifications(userId, query);
@@ -27,7 +27,7 @@ export class NotificationController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Mark all my notifications as read' })
-  markAllAsRead(@GetCurrentUser('id') userId: string) {
+  markAllAsRead(@GetCurrentUser('userId') userId: string) {
     return this.notificationService.markAllAsRead(userId);
   }
 
@@ -37,7 +37,7 @@ export class NotificationController {
   @ApiOperation({ summary: 'Mark a notification as read' })
   markAsRead(
     @Param('id') id: string,
-    @GetCurrentUser('id') userId: string,
+    @GetCurrentUser('userId') userId: string,
   ) {
     return this.notificationService.markAsRead(id, userId);
   }
