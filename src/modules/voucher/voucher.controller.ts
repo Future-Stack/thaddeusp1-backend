@@ -48,7 +48,7 @@ export class VoucherController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get current user vouchers' })
   findMyVouchers(
-    @GetCurrentUser('id') userId: string,
+    @GetCurrentUser('userId') userId: string,
     @Query() query: VoucherQueryDto,
   ) {
     return this.voucherService.findMyVouchers(userId, query);
@@ -68,7 +68,7 @@ export class VoucherController {
   @ApiOperation({ summary: 'Redeem a voucher' })
   redeem(
     @Param('id') id: string,
-    @GetCurrentUser('id') userId: string,
+    @GetCurrentUser('userId') userId: string,
   ) {
     return this.voucherService.redeemVoucher(id, userId);
   }

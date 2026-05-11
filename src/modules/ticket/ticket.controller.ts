@@ -33,7 +33,7 @@ export class TicketController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get current user tickets' })
   findMyTickets(
-    @GetCurrentUser('id') userId: string,
+    @GetCurrentUser('userId') userId: string,
     @Query() query: TicketQueryDto,
   ) {
     return this.ticketService.findMyTickets(userId, query);

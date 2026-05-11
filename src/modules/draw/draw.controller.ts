@@ -17,7 +17,7 @@ export class DrawController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiOperation({ summary: 'Run a draw for an event (Admin only)' })
   runDraw(
-    @GetCurrentUser('id') adminId: string,
+    @GetCurrentUser('userId') adminId: string,
     @Body() dto: CreateDrawDto,
   ) {
     return this.drawService.runDraw(adminId, dto);

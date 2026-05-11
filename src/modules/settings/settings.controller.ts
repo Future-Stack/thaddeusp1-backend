@@ -18,7 +18,7 @@ export class SettingsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get my notification & privacy settings' })
-  getUserSettings(@GetCurrentUser('id') userId: string) {
+  getUserSettings(@GetCurrentUser('userId') userId: string) {
     return this.settingsService.getUserSettings(userId);
   }
 
@@ -27,7 +27,7 @@ export class SettingsController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update my notification & privacy settings' })
   updateUserSettings(
-    @GetCurrentUser('id') userId: string,
+    @GetCurrentUser('userId') userId: string,
     @Body() dto: UpdateUserSettingsDto,
   ) {
     return this.settingsService.updateUserSettings(userId, dto);
