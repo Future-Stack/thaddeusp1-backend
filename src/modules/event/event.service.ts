@@ -99,4 +99,90 @@ export class EventService {
       where: { id },
     });
   }
+
+  async getEventStats(eventId: string) {
+    const [ticketsSold, uniqueParticipantsData, poolTotalData] = await Promise.all([
+      this.prisma.ticket.count({ where: { eventId } }),
+      this.prisma.ticket.groupBy({
+        by: ['userId'],
+        where: { eventId },
+      }),
+      this.prisma.purchase.aggregate({
+        where: { eventId, status: 'paid' },
+        _sum: { total: true },
+      }),
+    ]);
+
+    return {
+      totalTickets: ticketsSold,
+      poolTotal: Number(poolTotalData._sum.total || 0),
+      totalParticipants: uniqueParticipantsData.length,
+    };
+  }
+
+  async getEventPurchasedUsers(
+    eventId: string,
+    query: { searchTerm?: string; page?: string; limit?: string },
+  ) {
+    const { searchTerm, page = '1', limit = '10' } = query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    // Search/Filter criteria for Users who have paid purchases for this event
+    const where: any = {
+      purchases: {
+        some: { eventId, status: 'paid' },
+      },
+    };
+
+    if (searchTerm) {
+      where.OR = [
+        { fullName: { contains: searchTerm, mode: 'insensitive' } },
+        { email: { contains: searchTerm, mode: 'insensitive' } },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        include: {
+          purchases: {
+            where: { eventId, status: 'paid' },
+            select: { quantity: true, total: true, createdAt: true },
+          },
+        },
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    const formattedData = users.map((user) => {
+      const ticketAmount = user.purchases.reduce((sum, p) => sum + p.quantity, 0);
+      const totalPaid = user.purchases.reduce((sum, p) => sum + Number(p.total), 0);
+      const latestPurchaseDate = user.purchases.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      )[0]?.createdAt;
+
+      return {
+        userId: user.id,
+        name: user.fullName,
+        email: user.email,
+        ticketAmount,
+        totalPaid,
+        purchasedDate: latestPurchaseDate,
+      };
+    });
+
+    return {
+      data: formattedData,
+      meta: {
+        total,
+        page: parseInt(page),
+        limit: take,
+        totalPages: Math.ceil(total / take),
+      },
+    };
+  }
 }

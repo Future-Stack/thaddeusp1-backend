@@ -7,11 +7,12 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorator/roles.decorator';
@@ -58,5 +59,31 @@ export class EventController {
   @ApiOperation({ summary: 'Delete an event (Admin only)' })
   remove(@Param('id') id: string) {
     return this.eventService.remove(id);
+  }
+
+  @Get(':id/admin/stats')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get stats for a single event (Admin only)' })
+  getEventStats(@Param('id') id: string) {
+    return this.eventService.getEventStats(id);
+  }
+
+  @Get(':id/admin/users')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get list of users who purchased tickets for an event (Admin only)' })
+  @ApiQuery({ name: 'searchTerm', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  getEventPurchasedUsers(
+    @Param('id') id: string,
+    @Query('searchTerm') searchTerm?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.eventService.getEventPurchasedUsers(id, { searchTerm, page, limit });
   }
 }

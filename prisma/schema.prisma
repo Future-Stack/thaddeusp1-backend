@@ -76,6 +76,7 @@ model User {
   vouchers       Voucher[]
   notifications  Notification[]
   settings       UserSettings?
+  reviews        Review[]
 
   @@map("users")
 }
@@ -136,6 +137,17 @@ model Event {
 
   @@index([regionId])
   @@map("events")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  text      String   @db.Text
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("reviews")
 }
 
 enum PurchaseStatus {

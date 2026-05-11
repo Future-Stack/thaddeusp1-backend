@@ -17,6 +17,8 @@ import { DrawModule } from './modules/draw/draw.module';
 import { VoucherModule } from './modules/voucher/voucher.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { RevenueModule } from './modules/revenue/revenue.module';
+import { ReviewModule } from './modules/review/review.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -40,6 +42,8 @@ import envConfig from './config/env.config';
     VoucherModule,
     NotificationModule,
     SettingsModule,
+    RevenueModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],
