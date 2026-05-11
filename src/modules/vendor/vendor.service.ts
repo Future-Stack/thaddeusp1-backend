@@ -8,11 +8,13 @@ export class VendorService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: CreateVendorDto) {
-    // Verify region exists
-    const region = await this.prisma.region.findUnique({
-      where: { id: data.regionId },
-    });
-    if (!region) throw new NotFoundException('Region not found');
+    // Verify region exists if provided
+    if (data.regionId) {
+      const region = await this.prisma.region.findUnique({
+        where: { id: data.regionId },
+      });
+      if (!region) throw new NotFoundException('Region not found');
+    }
 
     return this.prisma.vendor.create({ data });
   }

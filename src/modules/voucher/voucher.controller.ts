@@ -1,20 +1,21 @@
 import { Controller, Get, Post, Param, Query, UseGuards, Body } from '@nestjs/common';
 import { VoucherService } from './voucher.service';
 import { VoucherQueryDto } from './dto/voucher-query.dto';
-import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { AdminGuard } from 'src/common/guards/admin.guard';
 import { GetCurrentUser } from 'src/common/decorator/get-current-user.decorator';
-import { IsInt, IsString, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 class IssueVoucherDto {
   @ApiProperty()
   @IsString()
   drawId: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  vendorId: string;
+  vendorId?: string;
 
   @ApiProperty({ default: 30 })
   @IsInt()

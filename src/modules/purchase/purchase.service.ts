@@ -145,7 +145,8 @@ export class PurchaseService {
           },
         });
 
-        const formattedNumber = this.generateTicketNumber(purchase.event.region.name, tempTicket.serialNumber);
+        const regionName = purchase.event.region?.name || 'GLOBAL';
+        const formattedNumber = this.generateTicketNumber(regionName, tempTicket.serialNumber);
 
         await tx.ticket.update({
           where: { id: tempTicket.id },

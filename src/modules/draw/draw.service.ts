@@ -6,7 +6,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateDrawDto } from './dto/create-draw.dto';
 import { DrawQueryDto } from './dto/draw-query.dto';
-import { DrawMethod } from '@prisma/client';
+import { DrawMethod, EventStatus } from '@prisma/client';
 
 @Injectable()
 export class DrawService {
@@ -78,6 +78,12 @@ export class DrawService {
           isWinner: true,
           winnerSelectedAt: new Date(),
         },
+      });
+
+      // Update event status to COMPLETED
+      await tx.event.update({
+        where: { id: eventId },
+        data: { status: EventStatus.COMPLETED },
       });
 
       return newDraw;

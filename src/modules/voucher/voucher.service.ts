@@ -1,22 +1,25 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { VoucherQueryDto } from './dto/voucher-query.dto';
-import { VoucherStatus } from '@prisma/client';
+import { VoucherStatus, Vendor } from '@prisma/client';
 
 @Injectable()
 export class VoucherService {
   constructor(private readonly prisma: PrismaService) {}
 
   // Called internally after a draw to issue a voucher to the winner
-  async issueVoucher(drawId: string, vendorId: string, expiresInDays = 30) {
+  async issueVoucher(drawId: string, vendorId?: string, expiresInDays = 30) {
     const draw = await this.prisma.draw.findUnique({
       where: { id: drawId },
       include: { event: { include: { region: true } }, winningTicket: true },
     });
     if (!draw) throw new NotFoundException('Draw not found');
 
-    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
-    if (!vendor) throw new NotFoundException('Vendor not found');
+    let vendor: Vendor | null = null;
+    if (vendorId) {
+      vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
+      if (!vendor) throw new NotFoundException('Vendor not found');
+    }
 
     // Check no voucher already issued for this draw
     const existing = await this.prisma.voucher.findUnique({ where: { drawId } });
@@ -26,22 +29,27 @@ export class VoucherService {
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
     const serial = draw.winningTicket.serialNumber;
-    const regionInitials = draw.event.region.name
-      .split(' ')
-      .filter((w) => w.length > 0)
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase();
+    
+    let regionInitials = 'GLB';
+    if (draw.event.region) {
+      regionInitials = draw.event.region.name
+        .split(' ')
+        .filter((w) => w.length > 0)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase();
+    }
+    
     const code = `VCH-${regionInitials}-${serial.toString().padStart(6, '0')}`;
 
     return this.prisma.voucher.create({
       data: {
         code,
-        value: vendor.voucherValue ?? draw.event.prizeValue,
+        value: vendor?.voucherValue ?? draw.event.prizeValue,
         drawId,
         ticketId: draw.winningTicketId,
         userId: draw.winnerId,
-        vendorId,
+        vendorId: vendorId || null,
         expiresAt,
       },
       include: {

@@ -20,10 +20,10 @@ export class CreateEventDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ example: 'uuid-of-region' })
-  @IsNotEmpty()
+  @ApiPropertyOptional({ example: 'uuid-of-region' })
+  @IsOptional()
   @IsUUID()
-  regionId: string;
+  regionId?: string;
 
   @ApiProperty({ example: '2026-06-01T10:00:00Z' })
   @IsNotEmpty()

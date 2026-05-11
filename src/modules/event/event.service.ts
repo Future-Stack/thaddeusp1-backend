@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { NotificationService } from '../notification/notification.service';
-import { NotificationType } from '@prisma/client';
+import { EventStatus, NotificationType } from '@prisma/client';
 
 @Injectable()
 export class EventService {
@@ -13,11 +13,28 @@ export class EventService {
   ) {}
 
   async create(data: CreateEventDto) {
-    // Verify region exists
-    const region = await this.prisma.region.findUnique({
-      where: { id: data.regionId },
+    // 1. Ensure only one active event exists at a time
+    const activeEvent = await this.prisma.event.findFirst({
+      where: {
+        status: {
+          notIn: [EventStatus.COMPLETED, EventStatus.CANCELLED],
+        },
+      },
     });
-    if (!region) throw new NotFoundException('Region not found');
+
+    if (activeEvent) {
+      throw new BadRequestException(
+        'An active event already exists. You can only have one active event at a time.',
+      );
+    }
+
+    // 2. Verify region exists if provided
+    if (data.regionId) {
+      const region = await this.prisma.region.findUnique({
+        where: { id: data.regionId },
+      });
+      if (!region) throw new NotFoundException('Region not found');
+    }
 
     const event = await this.prisma.event.create({
       data: {
@@ -25,6 +42,7 @@ export class EventService {
         drawDate: new Date(data.drawDate),
         ticketOpen: new Date(data.ticketOpen),
         ticketClose: new Date(data.ticketClose),
+        status: EventStatus.UPCOMING, // Default status
       },
     });
 

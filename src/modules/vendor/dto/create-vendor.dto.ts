@@ -22,8 +22,8 @@ export class CreateVendorDto {
   @IsNumber()
   voucherValue?: number;
 
-  @ApiProperty({ example: 'uuid-of-region' })
-  @IsNotEmpty()
+  @ApiPropertyOptional({ example: 'uuid-of-region' })
+  @IsOptional()
   @IsUUID()
-  regionId: string;
+  regionId?: string;
 }

@@ -88,8 +88,8 @@ model Vendor {
 
   voucherValue Decimal? @map("voucher_value") @db.Decimal(10, 2)
 
-  regionId String
-  region   Region @relation(fields: [regionId], references: [id])
+  regionId String?
+  region   Region? @relation(fields: [regionId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -100,13 +100,21 @@ model Vendor {
   @@map("vendors")
 }
 
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  CLOSED
+  COMPLETED
+  CANCELLED
+}
+
 model Event {
   id          String  @id @default(uuid())
   name        String
   description String?
 
-  regionId String
-  region   Region @relation(fields: [regionId], references: [id])
+  regionId String?
+  region   Region? @relation(fields: [regionId], references: [id])
 
   drawDate    DateTime @map("draw_date")
   ticketOpen  DateTime @map("ticket_open")
@@ -116,7 +124,8 @@ model Event {
   prizeValue  Decimal @map("prize_value") @db.Decimal(10, 2)
   maxTickets  Int     @map("max_tickets")
 
-  isAutoDraw Boolean @default(false) @map("is_auto_draw")
+  isAutoDraw Boolean     @default(false) @map("is_auto_draw")
+  status     EventStatus @default(UPCOMING)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -262,8 +271,8 @@ model Voucher {
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id])
 
-  vendorId String @map("vendor_id")
-  vendor   Vendor @relation(fields: [vendorId], references: [id])
+  vendorId String? @map("vendor_id")
+  vendor   Vendor? @relation(fields: [vendorId], references: [id])
 
   expiresAt  DateTime  @map("expires_at")
   redeemedAt DateTime? @map("redeemed_at")
