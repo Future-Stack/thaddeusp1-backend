@@ -37,6 +37,12 @@ export class EventController {
     return this.eventService.findAll();
   }
 
+  @Get('running')
+  @ApiOperation({ summary: 'Get the currently running event' })
+  getRunningEvent() {
+    return this.eventService.getRunningEvent();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a single event' })
   findOne(@Param('id') id: string) {

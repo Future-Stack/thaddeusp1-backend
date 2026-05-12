@@ -74,12 +74,34 @@ export class EventService {
   }
 
   async update(id: string, data: UpdateEventDto) {
-    await this.findOne(id);
+    const event = await this.findOne(id);
     if (data.regionId) {
       const region = await this.prisma.region.findUnique({
         where: { id: data.regionId },
       });
       if (!region) throw new NotFoundException('Region not found');
+    }
+
+    // 1. If status is being updated to an active status, ensure no other event is active
+    if (
+      data.status &&
+      ([EventStatus.UPCOMING, EventStatus.ONGOING] as EventStatus[]).includes(data.status) &&
+      event.status !== data.status
+    ) {
+      const activeEvent = await this.prisma.event.findFirst({
+        where: {
+          id: { not: id },
+          status: {
+            in: [EventStatus.UPCOMING, EventStatus.ONGOING],
+          },
+        },
+      });
+
+      if (activeEvent) {
+        throw new BadRequestException(
+          `Another event is already ${activeEvent.status.toLowerCase()}. Only one event can be upcoming or ongoing at a time.`,
+        );
+      }
     }
 
     const updateData: any = { ...data };
@@ -91,6 +113,24 @@ export class EventService {
       where: { id },
       data: updateData,
     });
+  }
+
+  async getRunningEvent() {
+    const event = await this.prisma.event.findFirst({
+      where: {
+        status: {
+          in: [EventStatus.UPCOMING, EventStatus.ONGOING],
+        },
+      },
+      include: { region: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!event) {
+      throw new NotFoundException('No running event found');
+    }
+
+    return event;
   }
 
   async remove(id: string) {
