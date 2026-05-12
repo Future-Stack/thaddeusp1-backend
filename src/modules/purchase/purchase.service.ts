@@ -69,8 +69,8 @@ export class PurchaseService {
         },
       ],
       mode: 'payment',
-      success_url: `${this.configService.get<string>('env.APPLICATION.FRONTEND_URL')}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${this.configService.get<string>('env.APPLICATION.FRONTEND_URL')}/purchase/cancel`,
+      success_url: `${this.configService.get<string>('env.APPLICATION.FRONTEND_URL')}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${this.configService.get<string>('env.APPLICATION.FRONTEND_URL')}/payment/failed`,
       metadata: {
         purchaseId: purchase.id,
         userId,

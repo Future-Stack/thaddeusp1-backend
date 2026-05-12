@@ -2,7 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters';
+import {
+  AllExceptionsFilter,
+  HttpExceptionFilter,
+  PrismaExceptionFilter,
+} from './common/filters';
 import {
   LoggingInterceptor,
   TransformInterceptor,
@@ -37,7 +41,11 @@ export async function bootstrap() {
   setupSecurity(app, configService, nodeEnv);
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(
+    new AllExceptionsFilter(),
+    new HttpExceptionFilter(),
+    new PrismaExceptionFilter(),
+  );
   app.useGlobalInterceptors(
     new LoggingInterceptor(),
     new TransformInterceptor(),

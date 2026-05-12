@@ -141,4 +141,35 @@ export class UserService {
       select: { id: true, fullName: true, status: true },
     });
   }
+
+  async getUserStats(userId: string) {
+    const [participatedEvents, purchaseStats, totalWins] = await Promise.all([
+      // 1. Total participated events (unique events with paid purchases)
+      this.prisma.purchase.groupBy({
+        by: ['eventId'],
+        where: { userId, status: 'paid' },
+      }),
+
+      // 2. Total tickets and total spent
+      this.prisma.purchase.aggregate({
+        where: { userId, status: 'paid' },
+        _sum: {
+          quantity: true,
+          total: true,
+        },
+      }),
+
+      // 3. Total wins
+      this.prisma.ticket.count({
+        where: { userId, isWinner: true },
+      }),
+    ]);
+
+    return {
+      participatedEvents: participatedEvents.length,
+      totalTicketsBought: purchaseStats._sum.quantity || 0,
+      totalSpentMoney: Number(purchaseStats._sum.total || 0),
+      totalWins,
+    };
+  }
 }

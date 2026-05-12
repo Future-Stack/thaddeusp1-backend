@@ -92,7 +92,7 @@ export class DrawService {
     return draw;
   }
 
-  async findAll(query: DrawQueryDto) {
+  async findAll(query: DrawQueryDto, currentUser: any) {
     const { eventId, winnerId, page = '1', limit = '10' } = query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
@@ -105,7 +105,7 @@ export class DrawService {
       this.prisma.draw.findMany({
         where,
         include: {
-          winner: { select: { id: true, fullName: true, email: true } },
+          winner: { select: { id: true, fullName: true, email: true, profileImg: true } },
           winningTicket: true,
           event: { include: { region: true } },
           drawnBy: { select: { id: true, fullName: true } },
@@ -118,17 +118,46 @@ export class DrawService {
       this.prisma.draw.count({ where }),
     ]);
 
+    const formattedDraws = draws.map((draw) => {
+      if (currentUser.role === 'ADMIN') {
+        return draw;
+      }
+
+      // Filtered response for regular users
+      return {
+        id: draw.id,
+        drawnAt: draw.drawnAt,
+        method: draw.method,
+        totalParticipants: draw.totalParticipants,
+        totalTickets: draw.totalTickets,
+        winner: {
+          fullName: draw.winner.fullName,
+          profileImg: draw.winner.profileImg,
+        },
+        event: {
+          id: draw.event.id,
+          name: draw.event.name,
+          prizeValue: draw.event.prizeValue,
+        },
+      };
+    });
+
     return {
-      data: draws,
-      meta: { total, page: parseInt(page), limit: take, totalPages: Math.ceil(total / take) },
+      data: formattedDraws,
+      meta: {
+        total,
+        page: parseInt(page),
+        limit: take,
+        totalPages: Math.ceil(total / take),
+      },
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, currentUser: any) {
     const draw = await this.prisma.draw.findUnique({
       where: { id },
       include: {
-        winner: { select: { id: true, fullName: true, email: true, phone: true } },
+        winner: { select: { id: true, fullName: true, email: true, phone: true, profileImg: true } },
         winningTicket: true,
         event: { include: { region: true } },
         drawnBy: { select: { id: true, fullName: true } },
@@ -136,6 +165,94 @@ export class DrawService {
       },
     });
     if (!draw) throw new NotFoundException('Draw not found');
-    return draw;
+
+    if (currentUser.role === 'ADMIN') {
+      return draw;
+    }
+
+    // Filtered response for regular users
+    return {
+      id: draw.id,
+      drawnAt: draw.drawnAt,
+      method: draw.method,
+      totalParticipants: draw.totalParticipants,
+      totalTickets: draw.totalTickets,
+      winner: {
+        fullName: draw.winner.fullName,
+        profileImg: draw.winner.profileImg,
+      },
+      event: {
+        id: draw.event.id,
+        name: draw.event.name,
+        prizeValue: draw.event.prizeValue,
+      },
+    };
+  }
+
+  async getWinners(query: { searchTerm?: string; page?: string; limit?: string }) {
+    const { searchTerm, page = '1', limit = '10' } = query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    const where: any = {};
+    if (searchTerm) {
+      where.winner = {
+        fullName: { contains: searchTerm, mode: 'insensitive' },
+      };
+    }
+
+    const [draws, total] = await Promise.all([
+      this.prisma.draw.findMany({
+        where,
+        include: {
+          winner: {
+            select: {
+              fullName: true,
+              profileImg: true,
+              streetAddress: true,
+              city: true,
+              state: true,
+            },
+          },
+          event: {
+            select: {
+              prizeValue: true,
+              name: true,
+            },
+          },
+        },
+        skip,
+        take,
+        orderBy: { drawnAt: 'desc' },
+      }),
+      this.prisma.draw.count({ where }),
+    ]);
+
+    // Find the latest winner globally to mark them
+    const latestDraw = await this.prisma.draw.findFirst({
+      orderBy: { drawnAt: 'desc' },
+      select: { id: true },
+    });
+
+    const formattedWinners = draws.map((draw) => ({
+      id: draw.id,
+      name: draw.winner.fullName,
+      profileImg: draw.winner.profileImg,
+      address: `${draw.winner.streetAddress || ''}, ${draw.winner.city || ''}, ${draw.winner.state || ''}`.trim().replace(/^, |, $/g, ''),
+      winDate: draw.drawnAt,
+      prize: draw.event.prizeValue,
+      eventName: draw.event.name,
+      isLastWinner: draw.id === latestDraw?.id,
+    }));
+
+    return {
+      data: formattedWinners,
+      meta: {
+        total,
+        page: parseInt(page),
+        limit: take,
+        totalPages: Math.ceil(total / take),
+      },
+    };
   }
 }

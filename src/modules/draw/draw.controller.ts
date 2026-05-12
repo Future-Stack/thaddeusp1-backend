@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Query, UseGuards, Body } from '@nestjs/co
 import { DrawService } from './draw.service';
 import { CreateDrawDto } from './dto/create-draw.dto';
 import { DrawQueryDto } from './dto/draw-query.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { AdminGuard } from 'src/common/guards/admin.guard';
 import { GetCurrentUser } from 'src/common/decorator/get-current-user.decorator';
@@ -23,19 +23,32 @@ export class DrawController {
     return this.drawService.runDraw(adminId, dto);
   }
 
+  @Get('winners')
+  @ApiOperation({ summary: 'Get all winner information (Public)' })
+  @ApiQuery({ name: 'searchTerm', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  getWinners(
+    @Query('searchTerm') searchTerm?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.drawService.getWinners({ searchTerm, page, limit });
+  }
+
   @Get()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @ApiOperation({ summary: 'Get all draws (Admin only)' })
-  findAll(@Query() query: DrawQueryDto) {
-    return this.drawService.findAll(query);
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all draws' })
+  findAll(@Query() query: DrawQueryDto, @GetCurrentUser() user: any) {
+    return this.drawService.findAll(query, user);
   }
 
   @Get(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get a single draw result' })
-  findOne(@Param('id') id: string) {
-    return this.drawService.findOne(id);
+  findOne(@Param('id') id: string, @GetCurrentUser() user: any) {
+    return this.drawService.findOne(id, user);
   }
 }

@@ -1,7 +1,5 @@
-import { ArgumentsHost, Catch, HttpStatus, Logger } from '@nestjs/common';
-import { BaseExceptionFilter } from '@nestjs/core';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-// import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 
 /**
@@ -9,10 +7,11 @@ import { Response } from 'express';
  * Handles Prisma database errors and converts them to HTTP responses
  */
 @Catch(Prisma.PrismaClientKnownRequestError)
-export class PrismaExceptionFilter extends BaseExceptionFilter {
+export class PrismaExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaExceptionFilter.name);
 
   catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
+    this.logger.debug(`Catching Prisma Error: ${exception.code}`);
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest();
@@ -36,7 +35,8 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
       case 'P2003':
         // Foreign key constraint violation
         status = HttpStatus.BAD_REQUEST;
-        message = 'Invalid reference';
+        const field = this.extractFieldFromMeta(exception.meta);
+        message = `Foreign key constraint failed on field: ${field}. This record is either referenced by another record or refers to a non-existent record.`;
         break;
 
       case 'P2014':
@@ -65,6 +65,12 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
   private extractFieldFromMeta(meta: any): string {
     if (meta?.target) {
       return Array.isArray(meta.target) ? meta.target.join(', ') : meta.target;
+    }
+    if (meta?.field_name) {
+      return meta.field_name;
+    }
+    if (meta?.cause) {
+      return meta.cause;
     }
     return 'unknown field';
   }

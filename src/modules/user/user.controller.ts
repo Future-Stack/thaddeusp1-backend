@@ -45,6 +45,14 @@ export class UserController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
+  @Get('me/stats')
+  @ApiOperation({ summary: 'Get current user statistics' })
+  async getMyStats(@GetCurrentUser('userId') userId: string) {
+    return this.userService.getUserStats(userId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Patch('status')
   @ApiOperation({ summary: 'Update own status (active/inActive)' })
   async updateStatus(@GetCurrentUser('userId') userId: string, @Body() dto: UpdateStatusDto) {
