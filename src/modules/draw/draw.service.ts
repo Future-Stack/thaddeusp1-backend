@@ -4,13 +4,17 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { VoucherService } from '../voucher/voucher.service';
 import { CreateDrawDto } from './dto/create-draw.dto';
 import { DrawQueryDto } from './dto/draw-query.dto';
 import { DrawMethod, EventStatus } from '@prisma/client';
 
 @Injectable()
 export class DrawService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly voucherService: VoucherService,
+  ) {}
 
   async runDraw(adminId: string, dto: CreateDrawDto) {
     const { eventId, method = DrawMethod.RANDOM } = dto;
@@ -85,6 +89,9 @@ export class DrawService {
         where: { id: eventId },
         data: { status: EventStatus.COMPLETED },
       });
+
+      // Automatically issue voucher to the winner
+      await this.voucherService.issueVoucher(newDraw.id, undefined, 30, tx);
 
       return newDraw;
     });

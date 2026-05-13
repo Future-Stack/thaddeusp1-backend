@@ -17,10 +17,11 @@ class IssueVoucherDto {
   @IsString()
   vendorId?: string;
 
-  @ApiProperty({ default: 30 })
+  @ApiPropertyOptional({ default: 30 })
+  @IsOptional()
   @IsInt()
   @Min(1)
-  expiresInDays: number;
+  expiresInDays?: number;
 }
 
 @ApiTags('Vouchers')

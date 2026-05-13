@@ -8,8 +8,10 @@ export class VoucherService {
   constructor(private readonly prisma: PrismaService) {}
 
   // Called internally after a draw to issue a voucher to the winner
-  async issueVoucher(drawId: string, vendorId?: string, expiresInDays = 30) {
-    const draw = await this.prisma.draw.findUnique({
+  async issueVoucher(drawId: string, vendorId?: string, expiresInDays?: number, tx?: any) {
+    const prisma = tx || this.prisma;
+
+    const draw = await prisma.draw.findUnique({
       where: { id: drawId },
       include: { event: { include: { region: true } }, winningTicket: true },
     });
@@ -17,16 +19,19 @@ export class VoucherService {
 
     let vendor: Vendor | null = null;
     if (vendorId) {
-      vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
+      vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
       if (!vendor) throw new NotFoundException('Vendor not found');
     }
 
     // Check no voucher already issued for this draw
-    const existing = await this.prisma.voucher.findUnique({ where: { drawId } });
+    const existing = await prisma.voucher.findUnique({ where: { drawId } });
     if (existing) throw new BadRequestException('Voucher already issued for this draw');
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+    let expiresAt: Date | null = null;
+    if (expiresInDays) {
+      expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+    }
 
     const serial = draw.winningTicket.serialNumber;
     
@@ -42,7 +47,7 @@ export class VoucherService {
     
     const code = `VCH-${regionInitials}-${serial.toString().padStart(6, '0')}`;
 
-    return this.prisma.voucher.create({
+    return prisma.voucher.create({
       data: {
         code,
         value: vendor?.voucherValue ?? draw.event.prizeValue,
@@ -117,7 +122,7 @@ export class VoucherService {
     if (voucher.status !== VoucherStatus.ACTIVE) {
       throw new BadRequestException(`Voucher is ${voucher.status.toLowerCase()}`);
     }
-    if (voucher.expiresAt < new Date()) {
+    if (voucher.expiresAt && voucher.expiresAt < new Date()) {
       await this.prisma.voucher.update({ where: { id }, data: { status: VoucherStatus.EXPIRED } });
       throw new BadRequestException('Voucher has expired');
     }
