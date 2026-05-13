@@ -143,7 +143,11 @@ export function setupSwagger(app: any, nodeEnv: string, port: number): void {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
 
   new Logger('Swagger').log(`Swagger: http://localhost:${port}/docs`);
 }

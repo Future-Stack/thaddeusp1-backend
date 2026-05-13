@@ -19,6 +19,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { RevenueModule } from './modules/revenue/revenue.module';
 import { ReviewModule } from './modules/review/review.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -44,6 +45,7 @@ import envConfig from './config/env.config';
     SettingsModule,
     RevenueModule,
     ReviewModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

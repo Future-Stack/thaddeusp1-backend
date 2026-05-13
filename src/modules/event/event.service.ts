@@ -10,7 +10,7 @@ export class EventService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
-  ) {}
+  ) { }
 
   async create(data: CreateEventDto) {
     // 1. Ensure only one active event exists at a time
@@ -58,19 +58,34 @@ export class EventService {
   }
 
   async findAll() {
-    return this.prisma.event.findMany({
-      include: { region: true },
+    const events = await this.prisma.event.findMany({
+      include: { region: true, _count: { select: { tickets: true } } },
       orderBy: { ticketOpen: 'desc' },
     });
+
+    return Promise.all(
+      events.map(async (event) => {
+        const stats = await this.getEventStats(event.id);
+        return {
+          ...event,
+          totalParticipants: stats.totalParticipants,
+        };
+      }),
+    );
   }
 
   async findOne(id: string) {
     const event = await this.prisma.event.findUnique({
       where: { id },
-      include: { region: true },
+      include: { region: true, _count: { select: { tickets: true } } },
     });
     if (!event) throw new NotFoundException('Event not found');
-    return event;
+
+    const stats = await this.getEventStats(event.id);
+    return {
+      ...event,
+      totalParticipants: stats.totalParticipants,
+    };
   }
 
   async update(id: string, data: UpdateEventDto) {
@@ -122,7 +137,7 @@ export class EventService {
           in: [EventStatus.UPCOMING, EventStatus.ONGOING],
         },
       },
-      include: { region: true },
+      include: { region: true, _count: { select: { tickets: true } } },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -130,7 +145,11 @@ export class EventService {
       throw new NotFoundException('No running event found');
     }
 
-    return event;
+    const stats = await this.getEventStats(event.id);
+    return {
+      ...event,
+      totalParticipants: stats.totalParticipants,
+    };
   }
 
   async remove(id: string) {

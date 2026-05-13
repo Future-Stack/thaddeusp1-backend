@@ -126,7 +126,7 @@ model Event {
   maxTickets  Int     @map("max_tickets")
 
   isAutoDraw Boolean     @default(false) @map("is_auto_draw")
-  status     EventStatus @default(UPCOMING)
+  status     EventStatus @default(ONGOING)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

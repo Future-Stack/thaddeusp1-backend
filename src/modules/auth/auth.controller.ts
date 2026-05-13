@@ -10,6 +10,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -39,6 +40,17 @@ export class AuthController {
   @ApiOperation({ summary: 'User, Elevetor & Admin Login' })
   async signIn(@Body() data: LoginDto) {
     const result = await this.authService.signIn(data);
+
+    return {
+      success: true,
+      result,
+    };
+  }
+
+  @Post('google-login')
+  @ApiOperation({ summary: 'Google Login (Social Authentication)' })
+  async googleLogin(@Body() data: GoogleLoginDto) {
+    const result = await this.authService.googleSignIn(data);
 
     return {
       success: true,

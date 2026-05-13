@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -10,6 +11,7 @@ import { UserSignUpDto } from './dto/user.singup.dto';
 import { ERROR_MESSAGES } from 'src/common/constants';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { IEnv } from 'src/config/env.config';
@@ -120,6 +122,64 @@ export class AuthService {
       message: 'Login successful',
       tokens,
       // user: rest,
+    };
+  }
+
+  async googleSignIn(data: GoogleLoginDto) {
+    const { email, name, profileImg } = data;
+
+    // 1. Find user
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user) {
+      // Check account status
+      if (user.status === 'suspended') {
+        throw new ForbiddenException('Account suspended');
+      }
+
+      // Update user info if needed
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          fullName: name,
+          profileImg: profileImg || user.profileImg,
+        },
+      });
+    } else {
+      // 2. Create new user if doesn't exist
+      // Since password is required, generate a random one
+      const randomPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
+      const hashedPassword = await this.hast(randomPassword);
+
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          fullName: name,
+          profileImg,
+          password: hashedPassword,
+          isVerified: true, // Google users are pre-verified
+        },
+      });
+    }
+
+    // 3. Generate tokens
+    const tokens = await this.generateTokens(user.id, user.email);
+    const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, 10);
+
+    // 4. Update refresh token + last login
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken: hashedRefreshToken,
+        lastLoggedin: new Date(),
+      },
+    });
+
+    return {
+      message: 'Google login successful',
+      tokens,
     };
   }
 

@@ -65,7 +65,7 @@ export class DrawService {
           drawnById: adminId,
         },
         include: {
-          winner: { select: { id: true, fullName: true, email: true } },
+          winner: { select: { id: true, fullName: true, email: true, profileImg: true } },
           winningTicket: true,
           event: true,
         },
