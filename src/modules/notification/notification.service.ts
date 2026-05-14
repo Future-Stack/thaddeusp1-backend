@@ -32,117 +32,160 @@ export class NotificationService {
 
   // Helper to fetch unread count and notify user via socket
   async updateAndNotifyCount(userId: string) {
-    const unreadCount = await this.prisma.notification.count({
+    const myParticipatedEvents = await this.prisma.ticket.findMany({
+      where: { userId, purchase: { status: 'paid' } },
+      select: { eventId: true },
+    });
+    const eventIds = [...new Set(myParticipatedEvents.map((t) => t.eventId))];
+
+    // Count private unread
+    const privateUnread = await this.prisma.notification.count({
       where: { userId, isRead: false },
     });
-    this.notificationGateway.sendUnreadCount(userId, unreadCount);
-    return unreadCount;
-  }
 
-  // Create notifications for multiple users (bulk) and broadcast
-  async createBulk(
-    userIds: string[],
-    type: NotificationType,
-    title: string,
-    message: string,
-    metadata?: Record<string, any>,
-  ) {
-    await this.prisma.notification.createMany({
-      data: userIds.map((userId) => ({ userId, type, title, message, metadata })),
+    // Count global/targeted unread (not in NotificationRead)
+    const globalUnread = await this.prisma.notification.count({
+      where: {
+        userId: null,
+        OR: [{ targetEventId: null }, { targetEventId: { in: eventIds } }],
+        readBy: { none: { userId } },
+      },
     });
 
-    // Broadcast to all (since it's bulk/public event)
-    this.notificationGateway.sendToAll('notification', {
-      type,
-      title,
-      message,
-      metadata,
-    });
-
-    // Notify each user of their updated unread count
-    for (const userId of userIds) {
-      await this.updateAndNotifyCount(userId);
-    }
+    const totalUnread = privateUnread + globalUnread;
+    this.notificationGateway.sendUnreadCount(userId, totalUnread);
+    return totalUnread;
   }
 
-  // Broadcast to all users and save to DB
+  // Broadcast to all users - STORE ONLY ONE RECORD
   async broadcast(
     type: NotificationType,
     title: string,
     message: string,
     metadata?: Record<string, any>,
   ) {
-    const users = await this.prisma.user.findMany({
-      where: { status: UserStatus.active },
-      select: { id: true },
-    });
-
-    if (users.length > 0) {
-      await this.createBulk(
-        users.map((u) => u.id),
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId: null,
         type,
         title,
         message,
         metadata,
-      );
-    }
+      },
+    });
+
+    // Send real-time notification to all connected users
+    this.notificationGateway.sendToAll('notification', notification);
+
+    // We don't loop through all users to update count here for performance
+    // Users will get their updated count when they connect or refresh
+    // Or we could use a different strategy if real-time count is critical for ALL
   }
 
-  /*
-  // Functionality to send to specific users based on region
-  async notifyByRegion(
-    regionId: string,
+  // Notify all participants of a specific event - STORE ONLY ONE RECORD
+  async notifyParticipants(
+    eventId: string,
     type: NotificationType,
     title: string,
     message: string,
     metadata?: Record<string, any>,
   ) {
-    const users = await this.prisma.user.findMany({
-      where: { regionId, status: UserStatus.active },
-      select: { id: true },
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId: null,
+        targetEventId: eventId,
+        type,
+        title,
+        message,
+        metadata,
+      },
     });
 
-    if (users.length > 0) {
-      const userIds = users.map((u) => u.id);
-      await this.prisma.notification.createMany({
-        data: userIds.map((userId) => ({ userId, type, title, message, metadata })),
-      });
+    // Get unique participants to send socket messages
+    const participants = await this.prisma.ticket.findMany({
+      where: { eventId, purchase: { status: 'paid' } },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
 
-      // Send to these specific users via socket
-      userIds.forEach(userId => {
-        this.notificationGateway.sendToUser(userId, 'notification', {
-          type,
-          title,
-          message,
-          metadata,
-        });
-      });
-    }
+    // Send real-time notification to each participant
+    participants.forEach((p) => {
+      this.notificationGateway.sendToUser(p.userId, 'notification', notification);
+      this.updateAndNotifyCount(p.userId).catch(() => {});
+    });
+
+    return notification;
   }
-  */
 
   async findMyNotifications(userId: string, query: NotificationQueryDto) {
     const { type, isRead, page = '1', limit = '20' } = query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
 
-    const where: any = { userId };
-    if (type) where.type = type;
-    if (isRead !== undefined) where.isRead = isRead;
+    // Get events user participated in
+    const myParticipatedEvents = await this.prisma.ticket.findMany({
+      where: { userId, purchase: { status: 'paid' } },
+      select: { eventId: true },
+    });
+    const eventIds = [...new Set(myParticipatedEvents.map((t) => t.eventId))];
 
-    const [notifications, total, unreadCount] = await Promise.all([
+    const where: any = {
+      OR: [
+        { userId }, // Private
+        { userId: null, targetEventId: null }, // Global broadcast
+        { userId: null, targetEventId: { in: eventIds } }, // Targeted broadcast
+      ],
+    };
+
+    if (type) where.type = type;
+
+    // Handle isRead filter efficiently in DB
+    if (isRead !== undefined) {
+      const isReadBool = isRead;
+      if (isReadBool) {
+        where.OR = [
+          { userId, isRead: true },
+          {
+            userId: null,
+            OR: [{ targetEventId: null }, { targetEventId: { in: eventIds } }],
+            readBy: { some: { userId } },
+          },
+        ];
+      } else {
+        where.OR = [
+          { userId, isRead: false },
+          {
+            userId: null,
+            OR: [{ targetEventId: null }, { targetEventId: { in: eventIds } }],
+            readBy: { none: { userId } },
+          },
+        ];
+      }
+    }
+
+    const [notifications, total] = await Promise.all([
       this.prisma.notification.findMany({
         where,
+        include: {
+          readBy: { where: { userId }, select: { id: true } },
+        },
         skip,
         take,
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.notification.count({ where }),
-      this.prisma.notification.count({ where: { userId, isRead: false } }),
     ]);
 
+    const finalData = notifications.map((n) => ({
+      ...n,
+      isRead: n.userId ? n.isRead : n.readBy.length > 0,
+      readBy: undefined, // Don't expose this
+    }));
+
+    const unreadCount = await this.updateAndNotifyCount(userId);
+
     return {
-      data: notifications,
+      data: finalData,
       meta: {
         total,
         page: parseInt(page),
@@ -154,23 +197,65 @@ export class NotificationService {
   }
 
   async markAsRead(id: string, userId: string) {
-    await this.prisma.notification.updateMany({
-      where: { id, userId },
-      data: { isRead: true },
+    const notification = await this.prisma.notification.findUnique({
+      where: { id },
     });
-    const unreadCount = await this.updateAndNotifyCount(userId);
-    console.log("unread count :", unreadCount);
+
+    if (!notification) return { success: false };
+
+    if (notification.userId) {
+      // Private notification
+      if (notification.userId === userId) {
+        await this.prisma.notification.update({
+          where: { id },
+          data: { isRead: true },
+        });
+      }
+    } else {
+      // Global/Targeted notification
+      await this.prisma.notificationRead.upsert({
+        where: { userId_notificationId: { userId, notificationId: id } },
+        create: { userId, notificationId: id },
+        update: {},
+      });
+    }
+
+    await this.updateAndNotifyCount(userId);
     return { success: true };
   }
 
   async markAllAsRead(userId: string) {
-    const result = await this.prisma.notification.updateMany({
+    // 1. Mark all private as read
+    await this.prisma.notification.updateMany({
       where: { userId, isRead: false },
       data: { isRead: true },
     });
-    const unreadCount = await this.updateAndNotifyCount(userId);
-    console.log("unread count :", unreadCount)
-    return result;
+
+    // 2. Mark all global/targeted as read by creating records in NotificationRead
+    const myParticipatedEvents = await this.prisma.ticket.findMany({
+      where: { userId, purchase: { status: 'paid' } },
+      select: { eventId: true },
+    });
+    const eventIds = [...new Set(myParticipatedEvents.map((t) => t.eventId))];
+
+    const unreadGlobal = await this.prisma.notification.findMany({
+      where: {
+        userId: null,
+        OR: [{ targetEventId: null }, { targetEventId: { in: eventIds } }],
+        readBy: { none: { userId } },
+      },
+      select: { id: true },
+    });
+
+    if (unreadGlobal.length > 0) {
+      await this.prisma.notificationRead.createMany({
+        data: unreadGlobal.map((n) => ({ userId, notificationId: n.id })),
+        skipDuplicates: true,
+      });
+    }
+
+    await this.updateAndNotifyCount(userId);
+    return { success: true };
   }
 
   // Admin: view all notifications with filters

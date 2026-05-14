@@ -33,8 +33,10 @@ export class EventController {
 
   @Get()
   @ApiOperation({ summary: 'Get all events' })
-  findAll() {
-    return this.eventService.findAll();
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.eventService.findAll({ page, limit });
   }
 
   @Get('running')

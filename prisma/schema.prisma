@@ -314,12 +314,14 @@ enum NotificationType {
 model Notification {
   id String @id @default(uuid())
 
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id])
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id])
 
   type    NotificationType
   title   String
   message String
+
+  targetEventId String? @map("target_event_id")
 
   isRead Boolean @default(false) @map("is_read")
 
@@ -327,10 +329,25 @@ model Notification {
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  readBy NotificationRead[]
+
   @@index([userId])
+  @@index([targetEventId])
   @@index([type])
   @@index([isRead])
   @@map("notifications")
+}
+
+model NotificationRead {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  notificationId String   @map("notification_id")
+  readAt         DateTime @default(now()) @map("read_at")
+
+  notification Notification @relation(fields: [notificationId], references: [id])
+
+  @@unique([userId, notificationId])
+  @@map("notification_reads")
 }
 
 // ─── USER SETTINGS (per-user preferences, 1:1 with User) ────────────────────

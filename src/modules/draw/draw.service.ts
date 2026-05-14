@@ -7,13 +7,15 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { VoucherService } from '../voucher/voucher.service';
 import { CreateDrawDto } from './dto/create-draw.dto';
 import { DrawQueryDto } from './dto/draw-query.dto';
-import { DrawMethod, EventStatus } from '@prisma/client';
+import { DrawMethod, EventStatus, NotificationType } from '@prisma/client';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class DrawService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly voucherService: VoucherService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async runDraw(adminId: string, dto: CreateDrawDto) {
@@ -91,10 +93,29 @@ export class DrawService {
       });
 
       // Automatically issue voucher to the winner
-      await this.voucherService.issueVoucher(newDraw.id, undefined, 30, tx);
+      const voucher = await this.voucherService.issueVoucher(newDraw.id, undefined, 30, tx);
 
-      return newDraw;
+      return { ...newDraw, voucher };
     });
+
+    // Send notifications
+    // 1. Notify all participants (one record in DB)
+    await this.notificationService.notifyParticipants(
+      eventId,
+      NotificationType.DRAW_RESULT,
+      'Draw Completed!',
+      `The draw for "${draw.event.name}" has been completed. Check if you won!`,
+      { drawId: draw.id, eventId },
+    );
+
+    // 2. Notify the winner (private record)
+    await this.notificationService.create(
+      draw.winnerId,
+      NotificationType.WINNER_ANNOUNCEMENT,
+      'Congratulations! You Won!',
+      `You are the winner of "${draw.event.name}"! A voucher has been issued to you.`,
+      { drawId: draw.id, eventId, voucherId: draw.voucher?.id },
+    );
 
     return draw;
   }
@@ -126,8 +147,10 @@ export class DrawService {
     ]);
 
     const formattedDraws = draws.map((draw) => {
+      const isWinner = currentUser?.id === draw.winnerId;
+
       if (currentUser.role === 'ADMIN') {
-        return draw;
+        return { ...draw, isWinner };
       }
 
       // Filtered response for regular users
@@ -137,7 +160,9 @@ export class DrawService {
         method: draw.method,
         totalParticipants: draw.totalParticipants,
         totalTickets: draw.totalTickets,
+        isWinner,
         winner: {
+          id: draw.winnerId,
           fullName: draw.winner.fullName,
           profileImg: draw.winner.profileImg,
         },
@@ -173,8 +198,10 @@ export class DrawService {
     });
     if (!draw) throw new NotFoundException('Draw not found');
 
+    const isWinner = currentUser?.id === draw.winnerId;
+
     if (currentUser.role === 'ADMIN') {
-      return draw;
+      return { ...draw, isWinner };
     }
 
     // Filtered response for regular users
@@ -184,7 +211,9 @@ export class DrawService {
       method: draw.method,
       totalParticipants: draw.totalParticipants,
       totalTickets: draw.totalTickets,
+      isWinner,
       winner: {
+        id: draw.winnerId,
         fullName: draw.winner.fullName,
         profileImg: draw.winner.profileImg,
       },
@@ -243,6 +272,7 @@ export class DrawService {
 
     const formattedWinners = draws.map((draw) => ({
       id: draw.id,
+      winnerId: draw.winnerId,
       name: draw.winner.fullName,
       profileImg: draw.winner.profileImg,
       address: `${draw.winner.streetAddress || ''}, ${draw.winner.city || ''}, ${draw.winner.state || ''}`.trim().replace(/^, |, $/g, ''),

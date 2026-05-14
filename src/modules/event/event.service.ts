@@ -17,7 +17,7 @@ export class EventService {
     const activeEvent = await this.prisma.event.findFirst({
       where: {
         status: {
-          notIn: [EventStatus.COMPLETED, EventStatus.CANCELLED],
+          notIn: [EventStatus.COMPLETED, EventStatus.CANCELLED, EventStatus.CLOSED],
         },
       },
     });
@@ -57,13 +57,22 @@ export class EventService {
     return event;
   }
 
-  async findAll() {
-    const events = await this.prisma.event.findMany({
-      include: { region: true, _count: { select: { tickets: true } } },
-      orderBy: { ticketOpen: 'desc' },
-    });
+  async findAll(query: { page?: string; limit?: string }) {
+    const { page = '1', limit = '10' } = query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
 
-    return Promise.all(
+    const [events, total] = await Promise.all([
+      this.prisma.event.findMany({
+        include: { region: true, _count: { select: { tickets: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.event.count(),
+    ]);
+
+    const data = await Promise.all(
       events.map(async (event) => {
         const stats = await this.getEventStats(event.id);
         return {
@@ -72,6 +81,16 @@ export class EventService {
         };
       }),
     );
+
+    return {
+      data,
+      meta: {
+        total,
+        page: parseInt(page),
+        limit: take,
+        totalPages: Math.ceil(total / take),
+      },
+    };
   }
 
   async findOne(id: string) {
