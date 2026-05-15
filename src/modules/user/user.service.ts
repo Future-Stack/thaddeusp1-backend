@@ -35,13 +35,13 @@ export class UserService {
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        fullName: data.fullName ?? user.fullName,
-        phone: data.phone ?? user.phone,
-        streetAddress: data.streetAddress ?? user.streetAddress,
-        city: data.city ?? user.city,
-        state: data.state ?? user.state,
-        zip: data.zip ? parseInt(data.zip, 10) : user.zip,
-        regionId: data.regionId ?? user.regionId,
+        fullName: data.fullName || user.fullName,
+        phone: data.phone || user.phone,
+        streetAddress: data.streetAddress || user.streetAddress,
+        city: data.city || user.city,
+        state: data.state || user.state,
+        zip: (data.zip && !isNaN(parseInt(data.zip, 10))) ? parseInt(data.zip, 10) : user.zip,
+        regionId: data.regionId && data.regionId !== '' ? data.regionId : user.regionId,
         profileImg,
       },
       include: {

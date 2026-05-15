@@ -9,6 +9,7 @@ import { CreateDrawDto } from './dto/create-draw.dto';
 import { DrawQueryDto } from './dto/draw-query.dto';
 import { DrawMethod, EventStatus, NotificationType } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class DrawService {
@@ -16,6 +17,7 @@ export class DrawService {
     private readonly prisma: PrismaService,
     private readonly voucherService: VoucherService,
     private readonly notificationService: NotificationService,
+    private readonly mailService: MailService,
   ) {}
 
   async runDraw(adminId: string, dto: CreateDrawDto) {
@@ -42,8 +44,13 @@ export class DrawService {
       throw new BadRequestException('No eligible tickets found for this event');
     }
 
-    // Check admin settings for minimum ticket threshold
+    // Check admin settings for minimum ticket threshold and maintenance mode
     const adminSettings = await this.prisma.adminSettings.findFirst();
+
+    if (adminSettings?.maintenanceMode) {
+      throw new BadRequestException('Platform is currently in maintenance mode. Draws are temporarily disabled.');
+    }
+
     const minTickets = adminSettings?.minTicketForDraw ?? 1;
     if (tickets.length < minTickets) {
       throw new BadRequestException(
@@ -116,6 +123,30 @@ export class DrawService {
       `You are the winner of "${draw.event.name}"! A voucher has been issued to you.`,
       { drawId: draw.id, eventId, voucherId: draw.voucher?.id },
     );
+
+    // 3. Send emails based on admin settings
+    if (adminSettings?.emailWinners) {
+      const winnerSubject = 'Congratulations! You are the winner!';
+      const winnerText = `You won the draw for "${draw.event.name}"! A voucher has been issued to your account. Check your profile for details.`;
+      this.mailService.sendMail(draw.winner.email, winnerSubject, winnerText).catch((err) => {
+        console.error(`Failed to send winner email to ${draw.winner.email}:`, err);
+      });
+    }
+
+    if (adminSettings?.emailAllParticipants) {
+      const participantEmails = [...new Set(tickets.map((t) => t.user.email))];
+      const participantSubject = `Draw results for "${draw.event.name}"`;
+      const participantText = `The draw for "${draw.event.name}" has been completed. Log in to your account to see the results.`;
+
+      // Send to all unique participants (excluding winner if already sent specific email)
+      participantEmails.forEach((email) => {
+        if (adminSettings?.emailWinners && email === draw.winner.email) return;
+
+        this.mailService.sendMail(email, participantSubject, participantText).catch((err) => {
+          console.error(`Failed to send participant email to ${email}:`, err);
+        });
+      });
+    }
 
     return draw;
   }

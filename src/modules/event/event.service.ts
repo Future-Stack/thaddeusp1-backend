@@ -13,6 +13,12 @@ export class EventService {
   ) { }
 
   async create(data: CreateEventDto) {
+    // 0. Check for maintenance mode
+    const adminSettings = await this.prisma.adminSettings.findFirst();
+    if (adminSettings?.maintenanceMode) {
+      throw new BadRequestException('Platform is currently in maintenance mode. Event creation is temporarily disabled.');
+    }
+
     // 1. Ensure only one active event exists at a time
     const activeEvent = await this.prisma.event.findFirst({
       where: {

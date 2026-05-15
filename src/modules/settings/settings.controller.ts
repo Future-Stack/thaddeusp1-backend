@@ -4,7 +4,8 @@ import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
 import { UpdateAdminSettingsDto } from './dto/update-admin-settings.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { AdminGuard } from 'src/common/guards/admin.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorator/roles.decorator';
 import { GetCurrentUser } from 'src/common/decorator/get-current-user.decorator';
 
 @ApiTags('Settings')
@@ -37,17 +38,30 @@ export class SettingsController {
 
   @Get('admin')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @ApiOperation({ summary: 'Get platform & notification settings (Admin only)' })
-  getAdminSettings() {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({
+    summary: 'Get platform & notification settings (Admin only)',
+    description: 'Retrieve global platform configurations including maintenance mode status and notification preferences.',
+  })
+  async getAdminSettings() {
     return this.settingsService.getAdminSettings();
   }
 
   @Patch('admin')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @ApiOperation({ summary: 'Update platform & notification settings (Admin only)' })
-  updateAdminSettings(@Body() dto: UpdateAdminSettingsDto) {
-    return this.settingsService.updateAdminSettings(dto);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({
+    summary: 'Update platform & notification settings (Admin only)',
+    description: 'Update global platform configurations such as maintenance mode, automated draw settings, and email preferences.',
+  })
+  async updateAdminSettings(@Body() dto: UpdateAdminSettingsDto) {
+    const settings = await this.settingsService.updateAdminSettings(dto);
+    return {
+      success: true,
+      message: 'Admin settings updated successfully',
+      data: settings,
+    };
   }
 }

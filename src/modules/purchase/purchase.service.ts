@@ -22,6 +22,12 @@ export class PurchaseService {
   }
 
   async createCheckoutSession(userId: string, createPurchaseDto: CreatePurchaseDto) {
+    // 0. Check for maintenance mode
+    const adminSettings = await this.prisma.adminSettings.findFirst();
+    if (adminSettings?.maintenanceMode) {
+      throw new BadRequestException('Platform is currently in maintenance mode. Ticket purchases are temporarily disabled.');
+    }
+
     const { eventId, quantity } = createPurchaseDto;
 
     const event = await this.prisma.event.findUnique({
