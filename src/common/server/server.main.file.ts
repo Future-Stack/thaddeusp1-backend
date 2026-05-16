@@ -110,9 +110,12 @@ export function setupSecurity(
   configService: ConfigService,
   nodeEnv: string,
 ): void {
+  const enableSwagger = configService.get('ENABLE_SWAGGER') === 'true';
+
   app.use(
     helmet({
-      contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
+      contentSecurityPolicy:
+        nodeEnv === 'production' && !enableSwagger ? undefined : false,
     }),
   );
   app.enableCors({
@@ -134,7 +137,8 @@ export function setupRequestLogging(app: any, logger: Logger): void {
 }
 
 export function setupSwagger(app: any, nodeEnv: string, port: number): void {
-  if (nodeEnv === 'production') return;
+  const enableSwagger = process.env.ENABLE_SWAGGER === 'true';
+  if (nodeEnv === 'production' && !enableSwagger) return;
 
   const config = new DocumentBuilder()
     .setTitle('InvestoMetrics Backend API')
