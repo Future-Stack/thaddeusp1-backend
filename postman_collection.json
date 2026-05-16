@@ -1,0 +1,816 @@
+{
+  "info": {
+    "name": "Win-Pizza API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "token", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "userId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Sign Up",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/sign-up",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"email\": \"user@gmail.com\",\n  \"password\": \"12345678\",\n  \"regionId\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var res = pm.response.json();",
+                  "if(res.result && res.result.accessToken) {",
+                  "  pm.collectionVariables.set('token', res.result.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', res.result.refreshToken);",
+                  "  pm.collectionVariables.set('userId', res.result.user.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"password\": \"12345678\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Google Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/google-login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"name\": \"John Doe\",\n  \"profileImg\": \"https://example.com/photo.jpg\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/refresh-token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/auth/change-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"oldpass123\",\n  \"newPassword\": \"newpass123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/reset-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"newpass123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Update Profile (multipart)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/user/profile",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fullName", "value": "John Doe", "type": "text" },
+                { "key": "phone", "value": "+123456789", "type": "text" },
+                { "key": "streetAddress", "value": "123 Main St", "type": "text" },
+                { "key": "city", "value": "New York", "type": "text" },
+                { "key": "state", "value": "NY", "type": "text" },
+                { "key": "zip", "value": "10001", "type": "text" },
+                { "key": "regionId", "value": "", "type": "text" },
+                { "key": "profileImg", "type": "file", "src": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/user/me/stats"
+          }
+        },
+        {
+          "name": "Update My Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Update User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/user/admin/:id/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Get User List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/user/admin/list?searchTerm=&page=1&limit=10",
+              "query": [
+                { "key": "searchTerm", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin - Get Global User Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/user/admin/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "Get All Events",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/events?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Running Event",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/events/running"
+          }
+        },
+        {
+          "name": "Get Single Event",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/events/:id"
+          }
+        },
+        {
+          "name": "Admin - Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Summer Lucky Draw\",\n  \"description\": \"Big prizes for everyone\",\n  \"regionId\": \"\",\n  \"drawDate\": \"2026-06-01T10:00:00Z\",\n  \"ticketOpen\": \"2026-05-01T10:00:00Z\",\n  \"ticketClose\": \"2026-05-31T23:59:59Z\",\n  \"ticketPrice\": 10.0,\n  \"prizeValue\": 1000.0,\n  \"maxTickets\": 500,\n  \"isAutoDraw\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Update Event",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/events/:id",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Event Name\",\n  \"ticketPrice\": 15.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Delete Event",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/events/:id"
+          }
+        },
+        {
+          "name": "Admin - Get Event Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/events/:id/admin/stats"
+          }
+        },
+        {
+          "name": "Admin - Get Event Purchased Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/events/:id/admin/users?searchTerm=&page=1&limit=10",
+              "query": [
+                { "key": "searchTerm", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Purchase",
+      "item": [
+        {
+          "name": "Buy Tickets",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/purchase/buy",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"event-uuid-here\",\n  \"quantity\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Stripe Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "stripe-signature", "value": "your-stripe-signature" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/purchase/webhook",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "Admin - Get All Tickets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/tickets?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Tickets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/my-tickets?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single Ticket",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/tickets/:id"
+          }
+        },
+        {
+          "name": "Admin - Update Ticket",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/tickets/:id",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Draws",
+      "item": [
+        {
+          "name": "Admin - Run Draw",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/draws/run",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"event-uuid-here\",\n  \"method\": \"RANDOM\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Winners (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/draws/winners?searchTerm=&page=1&limit=10",
+              "query": [
+                { "key": "searchTerm", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Draws",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/draws?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single Draw",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/draws/:id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/my?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/notifications/my/read-all"
+          }
+        },
+        {
+          "name": "Mark Single Notification As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/notifications/my/:id/read"
+          }
+        },
+        {
+          "name": "Admin - Get All Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Get All Reviews",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Submit Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/reviews",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Great platform! I won my first draw today.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/reviews/:id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Get My Settings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/settings/user"
+          }
+        },
+        {
+          "name": "Update My Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/settings/user",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"drawReminder\": true,\n  \"winnerAnnouncement\": true,\n  \"marketingEmails\": false,\n  \"weeklyDigest\": true,\n  \"voucherExpiryAlert\": true,\n  \"showOnWinnersList\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Get Admin Settings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/settings/admin"
+          }
+        },
+        {
+          "name": "Admin - Update Admin Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/settings/admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maintenanceMode\": false,\n  \"automatedDraws\": true,\n  \"drawDay\": \"MONDAY\",\n  \"drawTime\": \"18:00\",\n  \"maxTicketPerUser\": 10,\n  \"minTicketForDraw\": 1,\n  \"emailWinners\": true,\n  \"emailAllParticipants\": true,\n  \"smsWinnerNotifications\": false,\n  \"adminDrawAlerts\": true,\n  \"lowParticipationAlert\": true,\n  \"lowParticipationThreshold\": 10,\n  \"marketingEmailsToUsers\": true,\n  \"drawReminders\": true,\n  \"autoSendVouchers\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Regions",
+      "item": [
+        {
+          "name": "Get All Regions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/regions"
+          }
+        },
+        {
+          "name": "Get Single Region",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/regions/:id"
+          }
+        },
+        {
+          "name": "Admin - Create Region",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/regions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"North America\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Update Region",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/regions/:id",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Region Name\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Delete Region",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/regions/:id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendors",
+      "item": [
+        {
+          "name": "Get All Vendors",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/vendors"
+          }
+        },
+        {
+          "name": "Get Single Vendor",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/vendors/:id"
+          }
+        },
+        {
+          "name": "Admin - Create Vendor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/vendors",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tech Vendor\",\n  \"address\": \"123 Street, City\",\n  \"phone\": \"+123456789\",\n  \"voucherValue\": 50.0,\n  \"regionId\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Update Vendor",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/vendors/:id",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Vendor\",\n  \"voucherValue\": 75.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Delete Vendor",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/vendors/:id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vouchers",
+      "item": [
+        {
+          "name": "Admin - Issue Voucher",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/vouchers/issue",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"drawId\": \"draw-uuid-here\",\n  \"vendorId\": \"\",\n  \"expiresInDays\": 30\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - Get All Vouchers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/vouchers?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Vouchers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/vouchers/my-vouchers?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single Voucher",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/vouchers/:id"
+          }
+        },
+        {
+          "name": "Redeem Voucher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/vouchers/:id/redeem"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Admin - Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/dashboard/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revenue",
+      "item": [
+        {
+          "name": "Admin - Get Revenue Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/revenue/stats"
+          }
+        },
+        {
+          "name": "Admin - Get Revenue By Event",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/revenue/events?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
