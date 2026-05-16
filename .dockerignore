@@ -1,6 +1,8 @@
 node_modules
 .git
 .env
+Dockerfile
+docker-compose.yml
 package-lock.json
 .gitignore
 npm-debug.log*

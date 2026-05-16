@@ -14,10 +14,19 @@ export class MailService {
       host: config?.EMAIL_HOST,
       port: parseInt(config?.EMAIL_PORT || '587', 10),
       secure: config?.EMAIL_PORT === '465', // true for 465, false for other ports
+
+      // FORCE IPv4
+      // family: 4,
+
       auth: {
         user: config?.EMAIL_USER,
         pass: config?.EMAIL_PASSWORD,
       },
+
+      // Prevent long hanging
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
   }
 
@@ -35,7 +44,11 @@ export class MailService {
 
       return info;
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('SMTP ERROR:', {
+        message: error.message,
+        code: error.code,
+        command: error.command,
+      });
       throw new InternalServerErrorException('Failed to send email');
     }
   }
