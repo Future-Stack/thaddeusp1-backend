@@ -20,7 +20,7 @@ export class DrawService {
     private readonly mailService: MailService,
   ) {}
 
-  async runDraw(adminId: string, dto: CreateDrawDto) {
+  async runDraw(adminId: string | null, dto: CreateDrawDto) {
     const { eventId, method = DrawMethod.RANDOM } = dto;
 
     // Validate event
