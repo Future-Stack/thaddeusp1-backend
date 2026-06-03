@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+// Throttling imports removed from AppModule; used locally in ContactController
+import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -22,6 +24,7 @@ import { RevenueModule } from './modules/revenue/revenue.module';
 import { ReviewModule } from './modules/review/review.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import envConfig from './config/env.config';
+import { ContactModule } from './modules/contact/contact.module';
 
 @Module({
   imports: [
@@ -32,6 +35,7 @@ import envConfig from './config/env.config';
       load: [envConfig],
       cache: true,
     }),
+// Global throttling removed; rate limiting applied per-contact endpoint
     AuthModule,
     UserModule,
     CloudinaryModule,
@@ -48,6 +52,7 @@ import envConfig from './config/env.config';
     RevenueModule,
     ReviewModule,
     DashboardModule,
+    ContactModule,
   ],
   controllers: [AppController],
   providers: [AppService],

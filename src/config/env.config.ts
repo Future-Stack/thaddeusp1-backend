@@ -45,6 +45,9 @@ export interface IEnv {
     STRIPE_SECRET_KEY: string;
     STRIPE_WEBHOOK_SECRET: string;
   };
+  CONTACT: {
+    ADMIN_CONTACT_EMAIL: string;
+  }
 }
 
 const requiredEnv = [
@@ -76,6 +79,7 @@ const requiredEnv = [
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
   'FRONTEND_URL',
+  'ADMIN_CONTACT_EMAIL',
 ];
 // env Checker
 function envChecker() {
@@ -134,5 +138,9 @@ export default registerAs('env', (): IEnv => {
       STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY as string,
       STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET as string,
     },
+    CONTACT: {
+      ADMIN_CONTACT_EMAIL: process.env.ADMIN_CONTACT_EMAIL as string,
+    }
+
   };
 });
