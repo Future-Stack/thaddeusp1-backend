@@ -48,7 +48,7 @@ export class EventService {
         drawDate: new Date(data.drawDate),
         ticketOpen: new Date(data.ticketOpen),
         ticketClose: new Date(data.ticketClose),
-        status: EventStatus.UPCOMING, // Default status
+        status: EventStatus.ONGOING, // Default status
       },
     });
 
